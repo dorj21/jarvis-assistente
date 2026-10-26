@@ -170,6 +170,7 @@ footer {
     <form class="controls" id="chatForm">
       <input id="command" placeholder="Digite um comando..." autocomplete="off">
       <button type="submit">ENVIAR</button>
+      <button type="button" id="mic">🎙️</button>
     </form>
     <div class="actions">
       <button type="button" id="hello">STATUS</button>
@@ -223,6 +224,106 @@ document.getElementById("clear").addEventListener("click", function() {
   messages.textContent = "JARVIS: Conversa limpa. Aguardando comando.";
 });
 
+
+<script>
+const messages = document.getElementById("messages");
+const input = document.getElementById("command");
+const status = document.getElementById("status");
+
+function speak(text) {
+  if (!("speechSynthesis" in window)) {
+    status.textContent = "● VOZ NÃO DISPONÍVEL";
+    return;
+  }
+
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = "pt-BR";
+  utterance.rate = 1;
+  window.speechSynthesis.speak(utterance);
+}
+
+function reply(text) {
+  messages.textContent += "\n\nVOCÊ: " + text;
+  const q = text.toLowerCase();
+  let answer;
+
+  if (q.includes("seu nome") || q.includes("quem é você")) {
+    answer = "Sou o JARVIS, seu assistente virtual.";
+  } else if (q.includes("horas")) {
+    answer = "Agora são " + new Date().toLocaleTimeString("pt-BR") + ".";
+  } else if (q.includes("data")) {
+    answer = "Hoje é " + new Date().toLocaleDateString("pt-BR") + ".";
+  } else if (q.includes("olá") || q.includes("ola") || q.includes("oi")) {
+    answer = "Olá! Estou pronto para receber seus comandos.";
+  } else if (q.includes("status")) {
+    answer = "Sistema operacional. Minha inteligência artificial ainda será conectada.";
+  } else {
+    answer = "Comando recebido. Ainda preciso ser conectado a uma inteligência artificial para responder livremente.";
+  }
+
+  messages.textContent += "\n\nJARVIS: " + answer;
+  messages.scrollTop = messages.scrollHeight;
+  speak(answer);
+}
+
+document.getElementById("chatForm").addEventListener("submit", function(e) {
+  e.preventDefault();
+  const text = input.value.trim();
+  if (!text) return;
+  reply(text);
+  input.value = "";
+});
+
+document.getElementById("hello").addEventListener("click", function() {
+  reply("status");
+});
+
+document.getElementById("clear").addEventListener("click", function() {
+  messages.textContent = "JARVIS: Conversa limpa.";
+});
+
+const SpeechRecognition =
+  window.SpeechRecognition || window.webkitSpeechRecognition;
+
+document.getElementById("mic").addEventListener("click", function() {
+  if (!SpeechRecognition) {
+    status.textContent = "● RECONHECIMENTO INDISPONÍVEL";
+    messages.textContent +=
+      "\n\nJARVIS: Este navegador não oferece reconhecimento de voz compatível.";
+    return;
+  }
+
+  const recognition = new SpeechRecognition();
+  recognition.lang = "pt-BR";
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+
+  recognition.onstart = function() {
+    status.textContent = "● ESTOU OUVINDO...";
+  };
+
+  recognition.onresult = function(event) {
+    input.value = event.results[0][0].transcript;
+    status.textContent = "● COMANDO RECEBIDO";
+    reply(input.value);
+    input.value = "";
+  };
+
+  recognition.onerror = function() {
+    status.textContent = "● ERRO NO MICROFONE";
+    messages.textContent +=
+      "\n\nJARVIS: Não consegui ouvir. Verifique a permissão do microfone e tente novamente.";
+  };
+
+  recognition.onend = function() {
+    if (status.textContent === "● ESTOU OUVINDO...") {
+      status.textContent = "● SISTEMA ONLINE";
+    }
+  };
+
+  recognition.start();
+});
 </script>
 </body>
 </html>
